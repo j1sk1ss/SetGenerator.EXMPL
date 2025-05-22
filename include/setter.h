@@ -20,8 +20,12 @@ typedef struct {
     int series_count;
 } table_t;
 
-int print_table(const table_t* table);
+int print_table(const table_t* table, const char* table_name);
 table_t* generate_series(const series_t** src, int src_count);
+table_t* generate_sets(const table_t* possible_series);
 int free_table(table_t* table);
+
+int clean_and_sort_series_values(table_t* table);
+int remove_duplicate_series(table_t* table);
 
 #endif

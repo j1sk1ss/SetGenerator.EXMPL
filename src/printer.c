@@ -1,6 +1,6 @@
 #include "../include/setter.h"
 
-int print_table(const table_t* table) {
+int print_table(const table_t* table, const char* table_name) {
     if (!table) {
         fprintf(stderr, "Table is NULL.\n");
         return 0;
@@ -11,6 +11,8 @@ int print_table(const table_t* table) {
         return 1;
     }
 
+    fprintf(stdout, "+------------------------------------------------------+\n");
+    fprintf(stdout, "| %s |\n", table_name);
     fprintf(stdout, "+---------+------------+-------------------------------+\n");
     fprintf(stdout, "| Series# | Gradation  |            Values             |\n");
     fprintf(stdout, "+---------+------------+-------------------------------+\n");

@@ -54,7 +54,15 @@ int main(int argc, char* argv[]) {
 
     table_t* answer = generate_series((const series_t**)considering_series, series_index);
     if (answer) {
-        print_table(answer);
+        print_table(answer, "             Possible series                        ");
+        table_t* sets = generate_sets(answer);
+        if (sets) {
+            clean_and_sort_series_values(sets);
+            remove_duplicate_series(sets);
+            print_table(sets, "                Sets                                ");
+            free_table(sets);
+        }
+
         free_table(answer);
     }
     else {
