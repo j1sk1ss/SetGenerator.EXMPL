@@ -1,5 +1,6 @@
 #include "include/setter.h"
 
+#ifndef FILE_LOAD
 static series_t _series[] = {
     { .gradation = 0.001, .series = (double[]){ 1, 1.001, 1.002, 1.003, 1.004, 1.005, 1.006, 1.007, 1.008, 1.009, 1.01 }, .series_count = 11 },
     { .gradation = 0.005, .series = (double[]){ 1, 1.005, 1.01 }, .series_count = 3 },
@@ -20,12 +21,69 @@ static series_t _series[] = {
     { .gradation = 25, .series = (double[]){ 25, 50, 75, 100 }, .series_count = 4 },
     { .gradation = -1, .series = NULL, .series_count = -1 }
 };
+#else
+static series_t** _load_base_series(FILE* fp) {
+    int series_count = 0;
+    if (fread(&series_count, sizeof(int), 1, fp) != sizeof(int)) {
+        fprintf(stderr, "fread() error during series count read!\n");
+    }
+
+    series_t** answer = (series_t**)malloc(sizeof(series_t*) * (series_count + 1));
+    if (!answer) return NULL;
+    memset(answer, 0, sizeof(series_t*) * series_count);
+    
+    for (int i = 0; i < series_count; i++) {
+        series_t* series = (series_t*)malloc(sizeof(series_t));
+        if (!series) goto series_cleanup;
+
+        double gradation = 0;
+        int series_size  = 0;
+        fread(&gradation, sizeof(double), 1, fp);
+        fread(&series_size, sizeof(int), 1, fp);
+
+        series->series = (double*)malloc(sizeof(double) * series_size);
+        fread(series->series, sizeof(double), series_size, fp);
+        answer[i] = series;
+    }
+
+    answer[series_count] = (series_t*)malloc(sizeof(series_t));
+    answer[series_count]->series = NULL;
+    return answer;
+series_cleanup:
+    for (int i = 0; i < series_count; i++) {
+        if (answer[i]) free(answer[i]);
+    }
+
+    free(answer);
+    return NULL;
+}
+#endif
 
 /*
 Input data example:
 0.001 0.005 0.01 ...
 */
 int main(int argc, char* argv[]) {
+#ifdef FILE_LOAD
+    if (argc > 1) {
+        FILE* fp = fopen(argv[1], "rb");
+        if (fp) _series = _load_base_series(fp)
+        else {
+            fprintf(stderr, "fopen() error! File nfound!");
+            exit(EXIT_FAILURE);
+        }
+
+        if (!_series) {
+            fprintf(stderr, "_load_base_series() error!");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else {
+        fprintf(stderr, "File path required!");
+        exit(EXIT_FAILURE);
+    }
+#endif
+
     params_t* input = parse_input(argv, argc);
     if (!input) {
         fprintf(stderr, "parse_input() error!");
@@ -81,6 +139,11 @@ int main(int argc, char* argv[]) {
     }
 
 free_cons_ser:
+#ifdef FILE_LOAD
+    for (int i = 0; _series[i]->series; i++) free(_series[i]);
+    free(_series);
+#endif
+
     for (int i = 0; i < argc - 1; i++) {
         if (considering_series[i]) free(considering_series[i]);
     }

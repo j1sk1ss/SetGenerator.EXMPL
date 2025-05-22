@@ -3,7 +3,7 @@
 params_t* parse_input(char* argv[], int argc) {
     int grads_start = 0;
     int grads_count = 0;
-    double min = UNDEFINED_BOUND, max = UNDEFINED_BOUND;
+    double min = -UNDEFINED_BOUND, max = UNDEFINED_BOUND;
     for (int i = 0; i < argc; i++) {
         if (grads_start) grads_count++;
         if (!strcmp(argv[i], GRADATIONS)) grads_start = 1;
