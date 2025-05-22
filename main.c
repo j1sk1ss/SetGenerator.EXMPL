@@ -26,15 +26,22 @@ Input data example:
 0.001 0.005 0.01 ...
 */
 int main(int argc, char* argv[]) {
+    params_t* input = parse_input(argv, argc);
+    if (!input) {
+        fprintf(stderr, "parse_input() error!");
+        exit(EXIT_FAILURE);
+    }
+
     series_t** considering_series = (series_t**)malloc(sizeof(series_t*) * (argc - 1));
     if (!considering_series) {
         fprintf(stderr, "malloc() error!");
+        free_params(input);
         exit(EXIT_FAILURE);
     }
 
     int series_index = 0;
-    for (int i = 1; i < argc; i++) {
-        double gradation = atof(argv[i]);
+    for (int i = 0; i < input->drags_count; i++) {
+        double gradation = atof(input->gradations[i]);
         // fprintf(stdout, "Considered series gradation: %f\n", gradation);
 
         for (int j = 0; _series[j].series; j++) {
@@ -54,12 +61,16 @@ int main(int argc, char* argv[]) {
 
     table_t* answer = generate_series((const series_t**)considering_series, series_index);
     if (answer) {
-        print_table(answer, "             Possible series                        ");
+        clean_and_sort_series_values(answer);
+        // remove_duplicate_series(answer);
+
+        print_table(answer, "Possible series");
         table_t* sets = generate_sets(answer);
         if (sets) {
             clean_and_sort_series_values(sets);
             remove_duplicate_series(sets);
-            print_table(sets, "                Sets                                ");
+            filter_series_by_range(sets, input->min, input->max);
+            print_table(sets, "Sets");
             free_table(sets);
         }
 
@@ -74,6 +85,7 @@ free_cons_ser:
         if (considering_series[i]) free(considering_series[i]);
     }
 
+    free_params(input);
     free(considering_series);
     return EXIT_SUCCESS;
 }

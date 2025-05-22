@@ -1,6 +1,5 @@
 #include "../include/setter.h"
 
-
 static int _series_equal(const series_t* a, const series_t* b) {
     if (a->series_count != b->series_count) return 0;
     for (int i = 0; i < a->series_count; ++i) {
@@ -39,7 +38,7 @@ static int _double_cmp(const void* a, const void* b) {
     return 0;
 }
 
-int clean_and_sort_series_values(table_t* table) {
+int clean_and_sort_series_values(const table_t* table) {
     if (!table) return 0;
     for (int i = 0; i < table->series_count; ++i) {
         series_t* s = table->series[i];
@@ -56,5 +55,30 @@ int clean_and_sort_series_values(table_t* table) {
         s->series_count = new_count;
     }
 
+    return 1;
+}
+
+int filter_series_by_range(table_t* table, double min, double max) {
+    if (!table || table->series_count == 0) return 0;
+
+    int new_count = 0;
+    for (int i = 0; i < table->series_count; ++i) {
+        series_t* s = table->series[i];
+        int out_of_range = 0;
+        for (int j = 0; j < s->series_count; ++j) {
+            if (s->series[j] < min || s->series[j] > max) {
+                out_of_range = 1;
+                break;
+            }
+        }
+
+        if (!out_of_range) table->series[new_count++] = s;
+        else {
+            free(s->series);
+            free(s);
+        }
+    }
+
+    table->series_count = new_count;
     return 1;
 }

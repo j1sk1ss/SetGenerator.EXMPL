@@ -1,6 +1,8 @@
 #ifndef SETTER_H_
 #define SETTER_H_
 
+#include "parser.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -25,7 +27,8 @@ table_t* generate_series(const series_t** src, int src_count);
 table_t* generate_sets(const table_t* possible_series);
 int free_table(table_t* table);
 
-int clean_and_sort_series_values(table_t* table);
+int clean_and_sort_series_values(const table_t* table);
 int remove_duplicate_series(table_t* table);
+int filter_series_by_range(table_t* table, double min, double max);
 
 #endif

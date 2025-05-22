@@ -1,6 +1,5 @@
 #include "../include/setter.h"
 
-
 series_t* _create_series(int series_count, double gradation) {
     series_t* series = (series_t*)malloc(sizeof(series_t));
     if (!series) return NULL;

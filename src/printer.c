@@ -12,7 +12,7 @@ int print_table(const table_t* table, const char* table_name) {
     }
 
     fprintf(stdout, "+------------------------------------------------------+\n");
-    fprintf(stdout, "| %s |\n", table_name);
+    fprintf(stdout, "\t%s\t\n", table_name);
     fprintf(stdout, "+---------+------------+-------------------------------+\n");
     fprintf(stdout, "| Series# | Gradation  |            Values             |\n");
     fprintf(stdout, "+---------+------------+-------------------------------+\n");
