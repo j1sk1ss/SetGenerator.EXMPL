@@ -144,7 +144,10 @@ int main(int argc, char* argv[]) {
         clean_and_sort_series_values(answer);
         // remove_duplicate_series(answer);
 
-        print_table(answer, "Possible series");
+        if (!input->save_path) {
+            print_table(answer, "Possible series");
+        }
+        
         table_t* sets = generate_sets(answer);
         if (sets) {
             clean_and_sort_series_values(sets);

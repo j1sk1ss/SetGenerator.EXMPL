@@ -42,7 +42,7 @@ int save_table(FILE* fp, const table_t* table) {
         series_t* s = table->series[i];
         if (!s || s->series_count < 1) continue;
 
-        fprintf(fp, "Variant: %7d -----> %10.4f", i, s->gradation);
+        fprintf(fp, "Variant: %7d -----> ", i);
         for (int j = 0; j < s->series_count; ++j) {
             if (j > 0) fprintf(fp, " ");
             fprintf(fp, "%.3f", s->series[j]);
