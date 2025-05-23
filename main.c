@@ -22,6 +22,7 @@ static series_t _series[] = {
     { .gradation = -1, .series = NULL, .series_count = -1 }
 };
 #else
+static series_t** _series = NULL;
 static series_t** _load_base_series(FILE* fp) {
     int series_count = 0;
     if (fread(&series_count, sizeof(int), 1, fp) != sizeof(int)) {
@@ -64,10 +65,31 @@ Input data example:
 0.001 0.005 0.01 ...
 */
 int main(int argc, char* argv[]) {
+    if (argc <= 1) {
+        fprintf(stdout, "--grads <...> - Beginning of the researched array.\n");
+        fprintf(stdout, "<...> --end-grads - End of the researched array.\n");
+        
+#ifndef FILE_LOAD
+        fprintf(stdout, "Avaliable gradations:\n");
+        for (int i = 0; _series[i].series; i++) {
+            fprintf(stdout, "%.3f ", _series[i].gradation);
+        }
+#endif
+
+        fprintf(stdout, "\n\n");
+        fprintf(stdout, "--max <float> - Max bound for series.\n");
+        fprintf(stdout, "--min <float> - Min bound for series.\n");
+        fprintf(stdout, "-o <path> - Save path to answer.\n");
+        exit(EXIT_SUCCESS);
+    }
+
 #ifdef FILE_LOAD
     if (argc > 1) {
         FILE* fp = fopen(argv[1], "rb");
-        if (fp) _series = _load_base_series(fp)
+        if (fp) {
+            _series = _load_base_series(fp)
+            fclose(fp);
+        }
         else {
             fprintf(stderr, "fopen() error! File nfound!");
             exit(EXIT_FAILURE);
@@ -128,7 +150,23 @@ int main(int argc, char* argv[]) {
             clean_and_sort_series_values(sets);
             remove_duplicate_series(sets);
             filter_series_by_range(sets, input->min, input->max);
-            print_table(sets, "Sets");
+            
+            if (!input->save_path) {
+                print_table(sets, "Sets");
+            }
+            else {
+                FILE* fp = fopen(input->save_path, "w");
+                if (fp) {
+                    save_table(fp, sets);
+                    fclose(fp);
+                }
+                else {
+                    fprintf(stderr, "File [%s] not found!\n", input->save_path);
+                    free_table(sets);
+                    exit(EXIT_FAILURE);
+                }
+            }
+
             free_table(sets);
         }
 

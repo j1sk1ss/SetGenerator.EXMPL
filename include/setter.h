@@ -23,6 +23,8 @@ typedef struct {
 } table_t;
 
 int print_table(const table_t* table, const char* table_name);
+int save_table(FILE* fp, const table_t* table);
+
 table_t* generate_series(const series_t** src, int src_count);
 table_t* generate_sets(const table_t* possible_series);
 int free_table(table_t* table);

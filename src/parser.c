@@ -3,7 +3,7 @@
 params_t* parse_input(char* argv[], int argc) {
     int grads_start = 0;
     int grads_count = 0;
-    double min = -UNDEFINED_BOUND, max = UNDEFINED_BOUND;
+    double min = INT_MIN, max = INT_MAX;
     for (int i = 0; i < argc; i++) {
         if (grads_start) grads_count++;
         if (!strcmp(argv[i], GRADATIONS)) grads_start = 1;
@@ -18,6 +18,7 @@ params_t* parse_input(char* argv[], int argc) {
 
     params_t* params = (params_t*)malloc(sizeof(params_t));
     if (!params) return NULL;
+    params->save_path = NULL;
     params->max = max;
     params->min = min;
     params->drags_count = grads_count;
@@ -32,6 +33,10 @@ params_t* parse_input(char* argv[], int argc) {
     for (int i = 0; i < argc; i++) {
         if (!strcmp(argv[i], GRADATIONS)) grads_start = 1;
         else if (!strcmp(argv[i], END_EGRADS)) grads_start = 0;
+        else if (!strcmp(argv[i], SAVE_PATH)) {
+            if (i + 1 < argc) params->save_path = argv[i + 1];
+        }
+
         if (grads_start) {
             params->gradations[index++] = argv[i];
         }

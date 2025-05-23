@@ -113,7 +113,7 @@ static table_t** _separate_table_by_grad(const table_t* t) {
         groups[group_count].table     = new_table;
         group_count++;
 
-found_entry:
+found_entry: { }
     }
 
     table_t** result = malloc(sizeof(table_t*) * (group_count + 1));
