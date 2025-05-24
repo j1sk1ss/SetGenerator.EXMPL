@@ -2,6 +2,7 @@
 #define SETTER_H_
 
 #include "parser.h"
+#include "graphics.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -22,7 +23,7 @@ typedef struct {
     int series_count;
 } table_t;
 
-int print_table(const table_t* table, const char* table_name);
+int print_table(const table_t* table, const char* table_name, int highlight);
 int save_table(FILE* fp, const table_t* table);
 
 table_t* generate_series(const series_t** src, int src_count);

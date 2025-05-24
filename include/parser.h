@@ -15,14 +15,13 @@
 #define UNDEFINED_BOUND 0xDEADBEEF
 
 typedef struct {
-    char** gradations;
+    double* gradations;
+    int grads_count;
     char* save_path;
-    int drags_count;
     double min;
     double max;
 } params_t;
 
-params_t* parse_input(char* argv[], int argc);
 int free_params(params_t* params);
 
 #endif
