@@ -1,6 +1,7 @@
 #include "../include/setter.h"
 
 static int _series_equal(const series_t* a, const series_t* b) {
+    if (!a || !b) return 0;
     if (a->series_count != b->series_count) return 0;
     for (int i = 0; i < a->series_count; ++i) {
         if (!FLOAT_EQUAL(a->series[i], b->series[i])) return 0;
@@ -9,7 +10,7 @@ static int _series_equal(const series_t* a, const series_t* b) {
 }
 
 int remove_duplicate_series(table_t* table) {
-    if (!table || table->series_count == 0) return 0;
+    if (!table || !table->series || table->series_count == 0) return 0;
     int unique_count = 0;
     for (int i = 0; i < table->series_count; ++i) {
         int is_duplicate = 0;
@@ -19,7 +20,8 @@ int remove_duplicate_series(table_t* table) {
                 break;
             }
         }
-        if (!is_duplicate) table->series[unique_count++] = table->series[i];
+
+        if (!is_duplicate && table->series[i]->series_count > 1) table->series[unique_count++] = table->series[i];
         else {
             free(table->series[i]->series);
             free(table->series[i]);

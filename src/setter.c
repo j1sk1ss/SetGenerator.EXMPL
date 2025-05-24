@@ -93,7 +93,7 @@ static table_t** _separate_table_by_grad(const table_t* t) {
         memcpy(s->series, t->series[i]->series, sizeof(double) * t->series[i]->series_count);
 
         for (int j = 0; j < group_count; ++j) {
-            if (groups[j].gradation == s->gradation) {
+            if (FLOAT_EQUAL(groups[j].gradation, s->gradation)) {
                 _add_series_to_table(groups[j].table, s);
                 goto found_entry;
             }
@@ -132,7 +132,7 @@ table_t* generate_sets(const table_t* possible_series) {
 
     table_t** separated_grads = _separate_table_by_grad(possible_series);
     if (!separated_grads) {
-        free(table);
+        free_table(table);
         return NULL;
     }
 
@@ -143,25 +143,24 @@ table_t* generate_sets(const table_t* possible_series) {
         grad_table_count++;
     }
 
-    table_t* result = malloc(sizeof(table_t));
-    if (!result) {
-        free(table);
-        for (int i = 0; separated_grads[i]; i++) free_table(separated_grads[i]);
+    table->series_count = total_combinations;
+    table->series = (series_t**)malloc(sizeof(series_t*) * total_combinations);
+    int* indices = calloc(grad_table_count, sizeof(int));
+    if (!table->series || !indices) {
+        if (table->series) free(table->series);
+        if (indices) free(indices);
+        free_table(table);
         free(separated_grads);
         return NULL;
     }
 
-    result->series_count = total_combinations;
-    result->series = malloc(sizeof(series_t*) * total_combinations);
-
-    int* indices = calloc(grad_table_count, sizeof(int));
     for (int combo = 0; combo < total_combinations; ++combo) {
         int total_values = 0;
         for (int i = 0; i < grad_table_count; ++i) {
             total_values += separated_grads[i]->series[indices[i]]->series_count;
         }
 
-        series_t* new_series = _create_series(total_values, separated_grads[0]->series[indices[0]]->gradation);
+        series_t* new_series = _create_series(total_values, 0);
         if (new_series) {
             int offset = 0;
             for (int i = 0; i < grad_table_count; ++i) {
@@ -170,21 +169,23 @@ table_t* generate_sets(const table_t* possible_series) {
                 offset += src->series_count;
             }
 
-            result->series[combo] = new_series;
-        }
-
-        for (int i = grad_table_count - 1; i >= 0; --i) {
-            indices[i]++;
-            if (indices[i] < separated_grads[i]->series_count) break;
-            indices[i] = 0;
+            table->series[combo] = new_series;
+            for (int i = grad_table_count - 1; i >= 0; --i) {
+                indices[i]++;
+                if (indices[i] < separated_grads[i]->series_count) break;
+                indices[i] = 0;
+            }
         }
     }
 
-    for (int i = 0; separated_grads[i]; i++) free_table(separated_grads[i]);
+    for (int i = 0; separated_grads[i]; i++) {
+        free_table(separated_grads[i]);
+    }
+
     free(separated_grads);
     free(indices);
 
-    return result;
+    return table;
 }
 
 int free_table(table_t* table) {

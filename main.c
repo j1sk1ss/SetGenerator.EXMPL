@@ -142,7 +142,7 @@ int main(int argc, char* argv[]) {
     table_t* answer = generate_series((const series_t**)considering_series, series_index);
     if (answer) {
         clean_and_sort_series_values(answer);
-        // remove_duplicate_series(answer);
+        remove_duplicate_series(answer);
 
         if (!input->save_path) {
             print_table(answer, "Possible series");
@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
         table_t* sets = generate_sets(answer);
         if (sets) {
             clean_and_sort_series_values(sets);
-            remove_duplicate_series(sets);
+            // remove_duplicate_series(sets);
             filter_series_by_range(sets, input->min, input->max);
             
             if (!input->save_path) {
