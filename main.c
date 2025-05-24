@@ -133,7 +133,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-main_prog:
+main_prog: {}
     table_t* source_data = (table_t*)malloc(sizeof(table_t));
     if (!source_data) return EXIT_FAILURE;
     source_data->series         = main_series;
@@ -220,7 +220,7 @@ main_prog:
 
     clear_screen();
     print_center("GENERATED SERIES. PRESS <ENTER> TO CONTINUE.\n", -(screen_sizes.y / 2));
-    clean_and_sort_series_values(answer);
+    // clean_and_sort_series_values(answer);
     remove_duplicate_series(answer);
     print_table(answer, "GENERATED SERIES", -1);
     wait_key('\n');
@@ -246,9 +246,11 @@ main_prog:
             gotoxy(0, screen_sizes.y - 1);
             fprintfl(stdout, "Save path (default: tmp_answer.txt): ");
             char save_path[128] = { 0 };
-            sprintf(save_path, "tmp_answer.txt");
-
             fgets(save_path, sizeof(save_path), stdin);
+            if (strlen(save_path) < 2) {
+                sprintf(save_path, "%s", "tmp_answer.txt\0");
+            }
+
             FILE* fp = fopen(save_path, "w");
             if (fp) {
                 save_table(fp, sets);

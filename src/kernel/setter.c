@@ -210,7 +210,6 @@ int save_table(FILE* fp, const table_t* table) {
 
 int free_table(table_t* table) {
     if (!table) return 0;
-
     for (int i = 0; i < table->series_count; ++i) {
         series_t* s = table->series[i];
         if (s) {
