@@ -1,4 +1,4 @@
-#include "../include/setter.h"
+#include "../../include/setter.h"
 
 static int _series_equal(const series_t* a, const series_t* b) {
     if (a->series_count != b->series_count) return 0;

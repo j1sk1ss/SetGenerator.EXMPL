@@ -1,7 +1,7 @@
 #include "include/setter.h"
+#include "include/graphics.h"
 
-#ifndef FILE_LOAD
-static series_t _series[] = {
+static series_t _default_series[] = {
     { .gradation = 0.001, .series = (double[]){ 1, 1.001, 1.002, 1.003, 1.004, 1.005, 1.006, 1.007, 1.008, 1.009, 1.01 }, .series_count = 11 },
     { .gradation = 0.005, .series = (double[]){ 1, 1.005, 1.01 }, .series_count = 3 },
     { .gradation = 0.01, .series = (double[]){ 
@@ -21,8 +21,7 @@ static series_t _series[] = {
     { .gradation = 25, .series = (double[]){ 25, 50, 75, 100 }, .series_count = 4 },
     { .gradation = -1, .series = NULL, .series_count = -1 }
 };
-#else
-static series_t** _series = NULL;
+
 static series_t** _load_base_series(FILE* fp) {
     int series_count = 0;
     if (fread(&series_count, sizeof(int), 1, fp) != sizeof(int)) {
@@ -58,81 +57,158 @@ series_cleanup:
     free(answer);
     return NULL;
 }
-#endif
+
+static series_t** __convert_static_series_to_ptr_array__(series_t* source_array, size_t* out_count) {
+    if (!source_array || !out_count)
+        return NULL;
+
+    size_t count = 0;
+    while (source_array[count].series_count != -1)
+        count++;
+
+    series_t** result = malloc(sizeof(series_t*) * (count + 1));
+    if (!result) return NULL;
+
+    for (size_t i = 0; i < count; ++i)
+        result[i] = &source_array[i];
+
+    result[count] = NULL;
+    *out_count = count;
+    return result;
+}
+
 
 /*
 Input data example:
 0.001 0.005 0.01 ...
 */
 int main(int argc, char* argv[]) {
-    if (argc <= 1) {
-        fprintf(stdout, "--grads <...> - Beginning of the researched array.\n");
-        fprintf(stdout, "<...> --end-grads - End of the researched array.\n");
-        
-#ifndef FILE_LOAD
-        fprintf(stdout, "Avaliable gradations:\n");
-        for (int i = 0; _series[i].series; i++) {
-            fprintf(stdout, "%.3f ", _series[i].gradation);
+    clear_screen();
+    point_t screen_sizes;
+    get_console_size(&screen_sizes);
+    
+    print_center("WELCOME!", 0);
+    print_center("PRESS <ENTER> BUTTON TO CONTINUE...", 1);
+
+    int main_series_size = 0;
+    series_t** main_series = NULL;
+
+    wait_key('\n');
+    clear_screen();
+
+    print_center("INIT SETTINGS:", -1);
+    print_center("[1] USE DEFAULT LAYOUT", 0);
+    print_center("[2] USE FILE LAYOUT", 1);
+
+    while (1) {
+        char option = wait_any_key();
+        switch (option) {
+            case '1': 
+                main_series = __convert_static_series_to_ptr_array__(_default_series, (size_t*)&main_series_size);
+                goto main_prog;
+            break;
+            case '2':
+                gotoxy(0, screen_sizes.y - 1);
+                fprintfl(stdout, "PATH (max. 128): ");
+                char path[128] = { 0 };
+                fgets(path, sizeof(path), stdin);
+
+                FILE* fp = fopen(path, "rb");
+                if (fp) {
+                    main_series = _load_base_series(fp);
+                    fclose(fp);
+                }
+                else {
+                    fprintfl(stderr, "fopen() error! File nfound!");
+                    exit(EXIT_FAILURE);
+                }
+
+                if (!main_series) {
+                    fprintfl(stderr, "_load_base_series() error!");
+                    exit(EXIT_FAILURE);
+                }
+                goto main_prog;
+            break;
+            default: continue;
         }
-#endif
-
-        fprintf(stdout, "\n\n");
-        fprintf(stdout, "--max <float> - Max bound for series.\n");
-        fprintf(stdout, "--min <float> - Min bound for series.\n");
-        fprintf(stdout, "-o <path> - Save path to answer.\n");
-        exit(EXIT_SUCCESS);
     }
 
-#ifdef FILE_LOAD
-    if (argc > 1) {
-        FILE* fp = fopen(argv[1], "rb");
-        if (fp) {
-            _series = _load_base_series(fp)
-            fclose(fp);
+main_prog:
+    table_t* source_data = (table_t*)malloc(sizeof(table_t));
+    if (!source_data) return EXIT_FAILURE;
+    source_data->series         = main_series;
+    source_data->series_count   = main_series_size;
+
+    int line = 0;
+    clear_screen();
+    print_center("USED GRADS AND SOURCE. PRESS <ENTER> TO CONTINUE\n", -(screen_sizes.y / 2));
+    print_table(source_data, "AVAILABLE GRADATIONS", line);
+    print_center("[w] - Up, [s] - Down, [space] - Select gradation\n", (screen_sizes.y / 2) - 1);
+    print_center("[[] - Set min, []] - Set max\n", (screen_sizes.y / 2));
+
+    params_t* params = (params_t*)malloc(sizeof(params_t));
+    if (!params) return EXIT_FAILURE;
+    params->gradations = NULL;
+    params->min = INT_MIN;
+    params->max = INT_MAX;
+
+    char option = 0;
+    while ((option = wait_any_key()) != '\n') {
+        clear_screen();
+        if (option == 'w')      line = MAX(line - 1, 0);
+        else if (option == 's') line = MIN(line + 1, main_series_size);
+        else if (option == ' ') {
+            int presented = 0;
+            for (int i = 0; i < params->grads_count; i++) {
+                if (params->gradations[i] == main_series[line]->gradation) {
+                    presented = 1;
+                    break;
+                }
+            }
+
+            if (!presented) {
+                params->gradations = (double*)realloc(params->gradations, sizeof(double) * (params->grads_count + 1));
+                params->gradations[params->grads_count++] = main_series[line]->gradation;
+            }
         }
-        else {
-            fprintf(stderr, "fopen() error! File nfound!");
-            exit(EXIT_FAILURE);
+        else if (option == '[') {
+            gotoxy(0, screen_sizes.y - 1);
+            fprintfl(stdout, "Min value: ");
+            char val[128] = { 0 };
+            fgets(val, sizeof(val), stdin);
+            params->min = atof(val);
+        }
+        else if (option == ']') {
+            gotoxy(0, screen_sizes.y - 1);
+            fprintfl(stdout, "Max value: ");
+            char val[128] = { 0 };
+            fgets(val, sizeof(val), stdin);
+            params->max = atof(val);
         }
 
-        if (!_series) {
-            fprintf(stderr, "_load_base_series() error!");
-            exit(EXIT_FAILURE);
-        }
-    }
-    else {
-        fprintf(stderr, "File path required!");
-        exit(EXIT_FAILURE);
-    }
-#endif
-
-    params_t* input = parse_input(argv, argc);
-    if (!input) {
-        fprintf(stderr, "parse_input() error!");
-        exit(EXIT_FAILURE);
+        print_center("USED GRADS AND SOURCE. PRESS <ENTER> TO CONTINUE\n", -(screen_sizes.y / 2));
+        print_table(source_data, "AVAILABLE GRADATIONS", line);
+        print_center("[w] - Up, [s] - Down, [space] - Select gradation\n", (screen_sizes.y / 2) - 1);
+        print_center("[[] - Set min, []] - Set max\n", (screen_sizes.y / 2));
+        for (int i = 0; i < params->grads_count; i++) fprintfl(stdout, "%.3f\t", params->gradations[i]);
     }
 
-    series_t** considering_series = (series_t**)malloc(sizeof(series_t*) * (argc - 1));
-    if (!considering_series) {
-        fprintf(stderr, "malloc() error!");
-        free_params(input);
-        exit(EXIT_FAILURE);
-    }
+    free(source_data);
+
+    series_t** considering_series = (series_t**)malloc(sizeof(series_t*) * (params->grads_count));
+    if (!considering_series) goto free_cons_ser;
 
     int series_index = 0;
-    for (int i = 0; i < input->drags_count; i++) {
-        double gradation = atof(input->gradations[i]);
-        // fprintf(stdout, "Considered series gradation: %f\n", gradation);
-
-        for (int j = 0; _series[j].series; j++) {
-            if (FLOAT_EQUAL(_series[j].gradation, gradation)) {
+    for (int i = 0; i < params->grads_count; i++) {
+        for (int j = 0; main_series[j]->series; j++) {
+            if (FLOAT_EQUAL(main_series[j]->gradation, params->gradations[i])) {
                 series_t* curr = (series_t*)malloc(sizeof(series_t)); 
                 if (!curr) {
-                    fprintf(stderr, "malloc() error!");
+                    fprintfl(stderr, "malloc() error!");
                     goto free_cons_ser;
                 }
 
-                memcpy(curr, &_series[j], sizeof(series_t));
+                memcpy(curr, main_series[j], sizeof(series_t));
                 considering_series[series_index++] = curr;
                 break;
             }
@@ -140,56 +216,70 @@ int main(int argc, char* argv[]) {
     }
 
     table_t* answer = generate_series((const series_t**)considering_series, series_index);
-    if (answer) {
-        clean_and_sort_series_values(answer);
-        // remove_duplicate_series(answer);
+    if (!answer) goto free_cons_ser;
 
-        if (!input->save_path) {
-            print_table(answer, "Possible series");
-        }
-        
-        table_t* sets = generate_sets(answer);
-        if (sets) {
-            clean_and_sort_series_values(sets);
-            remove_duplicate_series(sets);
-            filter_series_by_range(sets, input->min, input->max);
-            
-            if (!input->save_path) {
-                print_table(sets, "Sets");
-            }
-            else {
-                FILE* fp = fopen(input->save_path, "w");
-                if (fp) {
-                    save_table(fp, sets);
-                    fclose(fp);
-                }
-                else {
-                    fprintf(stderr, "File [%s] not found!\n", input->save_path);
-                    free_table(sets);
-                    exit(EXIT_FAILURE);
-                }
-            }
-
-            free_table(sets);
-        }
-
+    clear_screen();
+    print_center("GENERATED SERIES. PRESS <ENTER> TO CONTINUE.\n", -(screen_sizes.y / 2));
+    clean_and_sort_series_values(answer);
+    remove_duplicate_series(answer);
+    print_table(answer, "GENERATED SERIES", -1);
+    wait_key('\n');
+    clear_screen();
+    
+    table_t* sets = generate_sets(answer);
+    if (!sets) {
         free_table(answer);
+        goto free_cons_ser;
     }
-    else {
-        fprintf(stderr, "Table is NULL!");
+
+    clean_and_sort_series_values(sets);
+    remove_duplicate_series(sets);
+    filter_series_by_range(sets, params->min, params->max);
+    
+    clear_screen();
+    print_center("POSSIBLE SETS. PRESS <ENTER> TO EXIT AND SAVE. <q> TO EXIT.\n", -(screen_sizes.y / 2));
+    print_table(sets, "GENERATED SETS", -1);
+    
+    while (1) {
+        char exit_option = wait_any_key();
+        if (exit_option == '\n') {
+            gotoxy(0, screen_sizes.y - 1);
+            fprintfl(stdout, "Save path (default: tmp_answer.txt): ");
+            char save_path[128] = { 0 };
+            sprintf(save_path, "tmp_answer.txt");
+
+            fgets(save_path, sizeof(save_path), stdin);
+            FILE* fp = fopen(save_path, "w");
+            if (fp) {
+                save_table(fp, sets);
+                fclose(fp);
+            }
+        }
+        else if (exit_option == 'q') { }
+        else continue;
+
+        free_table(sets);
+        free_table(answer);
+        break;
     }
 
 free_cons_ser:
-#ifdef FILE_LOAD
-    for (int i = 0; _series[i]->series; i++) free(_series[i]);
-    free(_series);
-#endif
+    if (main_series) {
+        for (int i = 0; i < main_series_size; i++) {
+            if (main_series[i]) free(main_series[i]);
+        }
 
-    for (int i = 0; i < argc - 1; i++) {
-        if (considering_series[i]) free(considering_series[i]);
+        free(main_series);
     }
 
-    free_params(input);
-    free(considering_series);
+    if (considering_series) {
+        for (int i = 0; i < argc - 1; i++) {
+            if (considering_series[i]) free(considering_series[i]);
+        }
+
+        free(considering_series);
+    }
+
+    free_params(params);
     return EXIT_SUCCESS;
 }

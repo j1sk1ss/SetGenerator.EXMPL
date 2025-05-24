@@ -1,4 +1,4 @@
-#include "../include/setter.h"
+#include "../../include/setter.h"
 
 series_t* _create_series(int series_count, double gradation) {
     series_t* series = (series_t*)malloc(sizeof(series_t));
@@ -185,6 +185,26 @@ table_t* generate_sets(const table_t* possible_series) {
     free(indices);
 
     return result;
+}
+
+int save_table(FILE* fp, const table_t* table) {
+    if (!table) return 0;
+    if (table->series_count < 1) return 0;
+    
+    for (int i = 0; i < table->series_count; ++i) {
+        series_t* s = table->series[i];
+        if (!s || s->series_count < 1) continue;
+
+        fprintf(fp, "Variant: %7d -----> ", i);
+        for (int j = 0; j < s->series_count; ++j) {
+            if (j > 0) fprintf(fp, " ");
+            fprintf(fp, "%.3f", s->series[j]);
+        }
+
+        fprintf(fp, "\n");
+    }
+
+    return 1;
 }
 
 int free_table(table_t* table) {
